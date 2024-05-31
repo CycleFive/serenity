@@ -1713,6 +1713,7 @@ impl Guild {
     ///
     /// For the `prefix` "zey" and the unsorted result:
     /// - "zeya", "zeyaa", "zeyla", "zeyzey", "zeyzeyzey"
+    ///
     /// It would be sorted:
     /// - "zeya", "zeyaa", "zeyla", "zeyzey", "zeyzeyzey"
     ///
@@ -1763,6 +1764,7 @@ impl Guild {
     ///
     /// If the substring is "yla", following results are possible:
     /// - "zeyla", "meiyla", "yladenisyla"
+    ///
     /// If 'case_sensitive' is false, the following are not found:
     /// - "zeYLa", "meiyLa", "LYAdenislyA"
     ///
@@ -1772,6 +1774,7 @@ impl Guild {
     ///
     /// For the `substring` "zey" and the unsorted result:
     /// - "azey", "zey", "zeyla", "zeylaa", "zeyzeyzey"
+    ///
     /// It would be sorted:
     /// - "zey", "azey", "zeyla", "zeylaa", "zeyzeyzey"
     ///
@@ -1818,6 +1821,7 @@ impl Guild {
     ///
     /// If the substring is "yla", following results are possible:
     /// - "zeyla", "meiyla", "yladenisyla"
+    ///
     /// If 'case_sensitive' is false, the following are not found:
     /// - "zeYLa", "meiyLa", "LYAdenislyA"
     ///
@@ -1826,6 +1830,7 @@ impl Guild {
     ///
     /// For the `substring` "zey" and the unsorted result:
     /// - "azey", "zey", "zeyla", "zeylaa", "zeyzeyzey"
+    ///
     /// It would be sorted:
     /// - "zey", "azey", "zeyla", "zeylaa", "zeyzeyzey"
     ///
@@ -1858,6 +1863,7 @@ impl Guild {
     ///
     /// If the substring is "yla", following results are possible:
     /// - "zeyla", "meiyla", "yladenisyla"
+    ///
     /// If 'case_sensitive' is false, the following are not found:
     /// - "zeYLa", "meiyLa", "LYAdenislyA"
     ///
@@ -1866,6 +1872,7 @@ impl Guild {
     ///
     /// For the `substring` "zey" and the unsorted result:
     /// - "azey", "zey", "zeyla", "zeylaa", "zeyzeyzey"
+    ///
     /// It would be sorted:
     /// - "zey", "azey", "zeyla", "zeylaa", "zeyzeyzey"
     ///
@@ -2347,7 +2354,7 @@ impl Guild {
     ///
     /// See the documentation on [`GuildPrune`] for more information.
     ///
-    /// **Note**: Requires the [Kick Members] permission.
+    /// **Note**: Requires [Kick Members] and [Manage Guild] permissions.
     ///
     /// # Errors
     ///
@@ -2359,13 +2366,14 @@ impl Guild {
     /// Can also return an [`Error::Json`] if there is an error deserializing the API response.
     ///
     /// [Kick Members]: Permissions::KICK_MEMBERS
+    /// [Manage Guild]: Permissions::MANAGE_GUILD
     /// [`Error::Http`]: crate::error::Error::Http
     /// [`Error::Json`]: crate::error::Error::Json
     pub async fn start_prune(&self, cache_http: impl CacheHttp, days: u8) -> Result<GuildPrune> {
         #[cfg(feature = "cache")]
         {
             if let Some(cache) = cache_http.cache() {
-                self.require_perms(cache, Permissions::KICK_MEMBERS)?;
+                self.require_perms(cache, Permissions::KICK_MEMBERS | Permissions::MANAGE_GUILD)?;
             }
         }
 
