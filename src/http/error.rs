@@ -247,10 +247,12 @@ fn loop_errors<'a>(
 
 #[cfg(test)]
 mod test {
-    use http_crate::response::Builder;
+    use http_crate::{response::Builder, Method};
     use reqwest::ResponseBuilderExt;
 
-    use super::*;
+    use crate::{all::{DiscordJsonError, ErrorResponse}, http};
+
+    //use super::*;
 
     #[tokio::test]
     async fn test_error_response_into() {
@@ -260,19 +262,17 @@ mod test {
             errors: vec![],
         };
 
-        let mut builder = Builder::new();
-        builder = builder.status(403);
-        builder = builder.url(String::from("https://ferris.crab").parse().unwrap());
-        let body_string = to_string(&error).unwrap();
+        let mut builder = Builder::new().status(403).url(String::from("https://ferris.crab").parse().unwrap());
+        let body_string = serde_json::to_string(&error).unwrap();
         let response = builder.body(body_string.into_bytes()).unwrap();
 
         let reqwest_response: reqwest::Response = response.into();
-        let error_response = ErrorResponse::from_response(reqwest_response, Method::POST).await;
+        let error_response = ErrorResponse::from_response(reqwest_response, http::Method::POST).await;
 
         let known = ErrorResponse {
             status_code: reqwest::StatusCode::from_u16(403).unwrap(),
             url: String::from("https://ferris.crab/"),
-            method: Method::POST,
+            method: http::Method::POST,
             error,
         };
 
