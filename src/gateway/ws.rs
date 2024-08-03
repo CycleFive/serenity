@@ -107,7 +107,7 @@ impl WsClient {
             max_frame_size: None,
             ..Default::default()
         };
-        let (stream, _) = connect_async_with_config(url.to_string(), Some(config), false).await?;
+        let (stream, _) = connect_async_with_config(url, Some(config), false).await?;
 
         Ok(Self(stream))
     }
