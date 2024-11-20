@@ -648,10 +648,10 @@ impl PartialGuild {
     /// lacks permission. Otherwise returns [`Error::Http`], as well as if invalid data is given.
     ///
     /// [Create Guild Expressions]: Permissions::CREATE_GUILD_EXPRESSIONS
-    pub async fn create_sticker<'a>(
+    pub async fn create_sticker(
         &self,
         cache_http: impl CacheHttp,
-        builder: CreateSticker<'a>,
+        builder: CreateSticker<'_>,
     ) -> Result<Sticker> {
         self.id.create_sticker(cache_http, builder).await
     }
@@ -1034,12 +1034,39 @@ impl PartialGuild {
 
     /// Calculate a [`Member`]'s permissions in the guild.
     #[inline]
-    #[cfg(feature = "cache")]
     #[must_use]
+    #[deprecated = "Use PartialGuild::member_permissions_in, as this doesn't consider permission overwrites"]
     pub fn member_permissions(&self, member: &Member) -> Permissions {
-        Guild::_user_permissions_in(
+        Guild::user_permissions_in_(
             None,
             member.user.id,
+            &member.roles,
+            self.id,
+            &self.roles,
+            self.owner_id,
+        )
+    }
+
+    /// Calculate a [`PartialMember`]'s permissions in the guild.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the passed [`UserId`] does not match the [`PartialMember`] id, if user is Some.
+    #[inline]
+    #[must_use]
+    #[deprecated = "Use PartialGuild::partial_member_permissions_in, as this doesn't consider permission overwrites"]
+    pub fn partial_member_permissions(
+        &self,
+        member_id: UserId,
+        member: &PartialMember,
+    ) -> Permissions {
+        if let Some(user) = &member.user {
+            assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
+        }
+
+        Guild::user_permissions_in_(
+            None,
+            member_id,
             &member.roles,
             self.id,
             &self.roles,
@@ -1063,7 +1090,7 @@ impl PartialGuild {
             assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
         }
 
-        Guild::_user_permissions_in(
+        Guild::user_permissions_in_(
             Some(channel),
             member_id,
             &member.roles,
@@ -1312,7 +1339,7 @@ impl PartialGuild {
     #[inline]
     #[must_use]
     pub fn user_permissions_in(&self, channel: &GuildChannel, member: &Member) -> Permissions {
-        Guild::_user_permissions_in(
+        Guild::user_permissions_in_(
             Some(channel),
             member.user.id,
             &member.roles,
@@ -1330,7 +1357,7 @@ impl PartialGuild {
     #[inline]
     #[deprecated = "this function ignores other roles the user may have as well as user-specific permissions; use user_permissions_in instead"]
     pub fn role_permissions_in(&self, channel: &GuildChannel, role: &Role) -> Result<Permissions> {
-        Guild::_role_permissions_in(channel, role, self.id)
+        Guild::role_permissions_in_(channel, role, self.id)
     }
 
     /// Gets the number of [`Member`]s that would be pruned with the given number of days.

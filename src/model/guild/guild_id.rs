@@ -33,7 +33,6 @@ use crate::http::{CacheHttp, Http, UserPagination};
 use crate::internal::prelude::*;
 #[cfg(feature = "model")]
 use crate::json::json;
-use crate::model::guild::SerializeIter;
 use crate::model::prelude::*;
 
 #[cfg(feature = "model")]
@@ -209,7 +208,7 @@ impl GuildId {
     /// [Ban Members]: Permissions::BAN_MEMBERS
     #[inline]
     pub async fn ban(self, http: impl AsRef<Http>, user: impl Into<UserId>, dmd: u8) -> Result<()> {
-        self._ban(http, user.into(), dmd, None).await
+        self.ban_(http, user.into(), dmd, None).await
     }
 
     /// Ban a [`User`] from the guild with a reason. Refer to [`Self::ban`] to further
@@ -227,10 +226,10 @@ impl GuildId {
         dmd: u8,
         reason: impl AsRef<str>,
     ) -> Result<()> {
-        self._ban(http, user.into(), dmd, Some(reason.as_ref())).await
+        self.ban_(http, user.into(), dmd, Some(reason.as_ref())).await
     }
 
-    async fn _ban(
+    async fn ban_(
         self,
         http: impl AsRef<Http>,
         user: UserId,
@@ -263,18 +262,18 @@ impl GuildId {
     pub async fn bulk_ban(
         self,
         http: &Http,
-        users: impl IntoIterator<Item = UserId>,
+        user_ids: &[UserId],
         delete_message_seconds: u32,
         reason: Option<&str>,
     ) -> Result<BulkBanResponse> {
         #[derive(serde::Serialize)]
-        struct BulkBan<I> {
-            user_ids: I,
+        struct BulkBan<'a> {
+            user_ids: &'a [UserId],
             delete_message_seconds: u32,
         }
 
         let map = BulkBan {
-            user_ids: SerializeIter::new(users.into_iter()),
+            user_ids,
             delete_message_seconds,
         };
 
@@ -897,6 +896,16 @@ impl GuildId {
         builder: EditGuildWidget<'_>,
     ) -> Result<GuildWidget> {
         builder.execute(cache_http, self).await
+    }
+
+    /// Gets a specific role in the guild, by Id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Http`] if the current user is not in the guild, or if the role does not
+    /// exist.
+    pub async fn role(self, http: impl AsRef<Http>, role_id: RoleId) -> Result<Role> {
+        http.as_ref().get_guild_role(self, role_id).await
     }
 
     /// Gets all of the guild's roles over the REST API.
@@ -1695,7 +1704,7 @@ impl From<PartialGuild> for GuildId {
     }
 }
 
-impl<'a> From<&'a PartialGuild> for GuildId {
+impl From<&PartialGuild> for GuildId {
     /// Gets the Id of a partial guild.
     fn from(guild: &PartialGuild) -> GuildId {
         guild.id
@@ -1709,7 +1718,7 @@ impl From<GuildInfo> for GuildId {
     }
 }
 
-impl<'a> From<&'a GuildInfo> for GuildId {
+impl From<&GuildInfo> for GuildId {
     /// Gets the Id of Guild information struct.
     fn from(guild_info: &GuildInfo) -> GuildId {
         guild_info.id
@@ -1723,7 +1732,7 @@ impl From<InviteGuild> for GuildId {
     }
 }
 
-impl<'a> From<&'a InviteGuild> for GuildId {
+impl From<&InviteGuild> for GuildId {
     /// Gets the Id of Invite Guild struct.
     fn from(invite_guild: &InviteGuild) -> GuildId {
         invite_guild.id
@@ -1737,7 +1746,7 @@ impl From<Guild> for GuildId {
     }
 }
 
-impl<'a> From<&'a Guild> for GuildId {
+impl From<&Guild> for GuildId {
     /// Gets the Id of Guild.
     fn from(live_guild: &Guild) -> GuildId {
         live_guild.id
@@ -1751,7 +1760,7 @@ impl From<WebhookGuild> for GuildId {
     }
 }
 
-impl<'a> From<&'a WebhookGuild> for GuildId {
+impl From<&WebhookGuild> for GuildId {
     /// Gets the Id of Webhook Guild struct.
     fn from(webhook_guild: &WebhookGuild) -> GuildId {
         webhook_guild.id

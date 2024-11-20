@@ -77,14 +77,15 @@ pub struct Ban {
 
 /// The response from [`GuildId::bulk_ban`].
 ///
-/// [Discord docs](https://github.com/discord/discord-api-docs/pull/6720).
+/// [Discord docs](https://discord.com/developers/docs/resources/guild#bulk-guild-ban).
 #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[non_exhaustive]
 pub struct BulkBanResponse {
     /// The users that were successfully banned.
-    banned_users: Vec<UserId>,
+    pub banned_users: Vec<UserId>,
     /// The users that were not successfully banned.
-    failed_users: Vec<UserId>,
+    pub failed_users: Vec<UserId>,
 }
 
 #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
@@ -272,6 +273,10 @@ pub struct Guild {
     #[serde(deserialize_with = "deserialize_guild_channels")]
     pub channels: HashMap<ChannelId, GuildChannel>,
     /// All active threads in this guild that current user has permission to view.
+    ///
+    /// A thread is guaranteed (for errors, not for panics) to be cached if a `MESSAGE_CREATE`
+    /// event is fired in said thread, however an `INTERACTION_CREATE` may not have a private
+    /// thread in cache.
     pub threads: Vec<GuildChannel>,
     /// A mapping of [`User`]s' Ids to their current presences.
     ///
@@ -427,6 +432,8 @@ impl Guild {
         required_permissions: Permissions,
     ) -> Result<(), Error> {
         if let Some(member) = self.members.get(&cache.current_user().id) {
+            // This isn't used for any channel-specific permissions, but sucks still.
+            #[allow(deprecated)]
             let bot_permissions = self.member_permissions(member);
             if !bot_permissions.contains(required_permissions) {
                 return Err(Error::Model(ModelError::InvalidPermissions {
@@ -485,7 +492,7 @@ impl Guild {
         user: impl Into<UserId>,
         dmd: u8,
     ) -> Result<()> {
-        self._ban_with_reason(cache_http, user.into(), dmd, "").await
+        self.ban_with_reason_(cache_http, user.into(), dmd, "").await
     }
 
     /// Ban a [`User`] from the guild with a reason. Refer to [`Self::ban`] to further
@@ -503,10 +510,10 @@ impl Guild {
         dmd: u8,
         reason: impl AsRef<str>,
     ) -> Result<()> {
-        self._ban_with_reason(cache_http, user.into(), dmd, reason.as_ref()).await
+        self.ban_with_reason_(cache_http, user.into(), dmd, reason.as_ref()).await
     }
 
-    async fn _ban_with_reason(
+    async fn ban_with_reason_(
         &self,
         cache_http: impl CacheHttp,
         user: UserId,
@@ -533,7 +540,7 @@ impl Guild {
     pub async fn bulk_ban(
         &self,
         cache_http: impl CacheHttp,
-        users: impl IntoIterator<Item = UserId>,
+        user_ids: &[UserId],
         delete_message_seconds: u32,
         reason: Option<&str>,
     ) -> Result<BulkBanResponse> {
@@ -544,7 +551,7 @@ impl Guild {
             }
         }
 
-        self.id.bulk_ban(cache_http.http(), users, delete_message_seconds, reason).await
+        self.id.bulk_ban(cache_http.http(), user_ids, delete_message_seconds, reason).await
     }
 
     /// Returns the formatted URL of the guild's banner image, if one exists.
@@ -947,10 +954,10 @@ impl Guild {
     /// lacks permission. Otherwise returns [`Error::Http`], as well as if invalid data is given.
     ///
     /// [Create Guild Expressions]: Permissions::CREATE_GUILD_EXPRESSIONS
-    pub async fn create_sticker<'a>(
+    pub async fn create_sticker(
         &self,
         cache_http: impl CacheHttp,
-        builder: CreateSticker<'a>,
+        builder: CreateSticker<'_>,
     ) -> Result<Sticker> {
         self.id.create_sticker(cache_http.http(), builder).await
     }
@@ -1433,11 +1440,11 @@ impl Guild {
         lhs_id: impl Into<UserId>,
         rhs_id: impl Into<UserId>,
     ) -> Option<UserId> {
-        self._greater_member_hierarchy(lhs_id.into(), rhs_id.into())
+        self.greater_member_hierarchy_(lhs_id.into(), rhs_id.into())
     }
 
     #[cfg(feature = "cache")]
-    fn _greater_member_hierarchy(&self, lhs_id: UserId, rhs_id: UserId) -> Option<UserId> {
+    fn greater_member_hierarchy_(&self, lhs_id: UserId, rhs_id: UserId) -> Option<UserId> {
         // Check that the IDs are the same. If they are, neither is greater.
         if lhs_id == rhs_id {
             return None;
@@ -1906,12 +1913,39 @@ impl Guild {
 
     /// Calculate a [`Member`]'s permissions in the guild.
     #[inline]
-    #[cfg(feature = "cache")]
     #[must_use]
+    #[deprecated = "Use Guild::member_permissions_in, as this doesn't consider permission overwrites"]
     pub fn member_permissions(&self, member: &Member) -> Permissions {
-        Self::_user_permissions_in(
+        Self::user_permissions_in_(
             None,
             member.user.id,
+            &member.roles,
+            self.id,
+            &self.roles,
+            self.owner_id,
+        )
+    }
+
+    /// Calculate a [`PartialMember`]'s permissions in the guild.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the passed [`UserId`] does not match the [`PartialMember`] id, if user is Some.
+    #[inline]
+    #[must_use]
+    #[deprecated = "Use Guild::partial_member_permissions_in, as this doesn't consider permission overwrites"]
+    pub fn partial_member_permissions(
+        &self,
+        member_id: UserId,
+        member: &PartialMember,
+    ) -> Permissions {
+        if let Some(user) = &member.user {
+            assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
+        }
+
+        Self::user_permissions_in_(
+            None,
+            member_id,
             &member.roles,
             self.id,
             &self.roles,
@@ -1943,7 +1977,7 @@ impl Guild {
     #[inline]
     #[must_use]
     pub fn user_permissions_in(&self, channel: &GuildChannel, member: &Member) -> Permissions {
-        Self::_user_permissions_in(
+        Self::user_permissions_in_(
             Some(channel),
             member.user.id,
             &member.roles,
@@ -1969,7 +2003,7 @@ impl Guild {
             assert_eq!(user.id, member_id, "User::id does not match provided PartialMember");
         }
 
-        Self::_user_permissions_in(
+        Self::user_permissions_in_(
             Some(channel),
             member_id,
             &member.roles,
@@ -1980,7 +2014,7 @@ impl Guild {
     }
 
     /// Helper function that can also be used from [`PartialGuild`].
-    pub(crate) fn _user_permissions_in(
+    pub(crate) fn user_permissions_in_(
         channel: Option<&GuildChannel>,
         member_user_id: UserId,
         member_roles: &[RoleId],
@@ -2057,11 +2091,11 @@ impl Guild {
     #[inline]
     #[deprecated = "this function ignores other roles the user may have as well as user-specific permissions; use user_permissions_in instead"]
     pub fn role_permissions_in(&self, channel: &GuildChannel, role: &Role) -> Result<Permissions> {
-        Self::_role_permissions_in(channel, role, self.id)
+        Self::role_permissions_in_(channel, role, self.id)
     }
 
     /// Helper function that can also be used from [`PartialGuild`].
-    pub(crate) fn _role_permissions_in(
+    pub(crate) fn role_permissions_in_(
         channel: &GuildChannel,
         role: &Role,
         guild_id: GuildId,

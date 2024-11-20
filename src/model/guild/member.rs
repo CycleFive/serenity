@@ -81,6 +81,17 @@ bitflags! {
         const BYPASSES_VERIFICATION = 1 << 2;
         /// Member has started onboarding. Not editable
         const STARTED_ONBOARDING = 1 << 3;
+        /// Member is a guest and can only access the voice channel they were invited to. Not
+        /// editable
+        const IS_GUEST = 1 << 4;
+        /// Member has started Server Guide new member actions. Not editable
+        const STARTED_HOME_ACTIONS = 1 << 5;
+        /// Member has completed Server Guide new member actions. Not editable
+        const COMPLETED_HOME_ACTIONS = 1 << 6;
+        /// Member's username, display name, or nickname is blocked by AutoMod. Not editable
+        const AUTOMOD_QUARANTINED_USERNAME = 1 << 7;
+        /// Member has dismissed the DM settings upsell. Not editable
+        const DM_SETTINGS_UPSELL_ACKNOWLEDGED = 1 << 9;
     }
 }
 
@@ -424,8 +435,11 @@ impl Member {
     /// And/or returns [`ModelError::ItemMissing`] if the "default channel" of the guild is not
     /// found.
     #[cfg(feature = "cache")]
+    #[deprecated = "Use Guild::member_permissions_in, as this doesn't consider permission overwrites"]
     pub fn permissions(&self, cache: impl AsRef<Cache>) -> Result<Permissions> {
         let guild = cache.as_ref().guild(self.guild_id).ok_or(ModelError::GuildNotFound)?;
+
+        #[allow(deprecated)]
         Ok(guild.member_permissions(self))
     }
 
@@ -638,6 +652,8 @@ pub struct PartialThreadMember {
     pub flags: ThreadMemberFlags,
 }
 
+/// A model representing a user in a Guild Thread.
+///
 /// [Discord docs](https://discord.com/developers/docs/resources/channel#thread-member-object),
 /// [extra fields](https://discord.com/developers/docs/topics/gateway-events#thread-member-update-thread-member-update-event-extra-fields).
 #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]

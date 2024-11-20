@@ -12,7 +12,7 @@ use reqwest::Url;
 use reqwest::{Client, ClientBuilder, Response as ReqwestResponse, StatusCode};
 use secrecy::{ExposeSecret, SecretString};
 use serde::de::DeserializeOwned;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, instrument, warn};
 
 use super::multipart::{Multipart, MultipartUpload};
 use super::ratelimiting::Ratelimiter;
@@ -33,8 +33,9 @@ use crate::internal::prelude::*;
 use crate::json::*;
 use crate::model::prelude::*;
 
-/// A builder for the underlying [`Http`] client that performs requests to Discord's HTTP API. If
-/// you do not need to use a proxy or do not need to disable the rate limiter, you can use
+/// A builder for the underlying [`Http`] client that performs requests to Discord's HTTP API
+///
+/// If you do not need to use a proxy or do not need to disable the rate limiter, you can use
 /// [`Http::new`] instead.
 ///
 /// ## Example
@@ -317,7 +318,8 @@ impl Http {
 
     /// Bans multiple users from a [`Guild`], optionally removing their messages.
     ///
-    /// See the [Discord Docs](https://github.com/discord/discord-api-docs/pull/6720) for more information.
+    /// See the [Discord docs](https://discord.com/developers/docs/resources/guild#bulk-guild-ban)
+    /// for more information.
     pub async fn bulk_ban_users(
         &self,
         guild_id: GuildId,
@@ -834,7 +836,7 @@ impl Http {
         .await
     }
 
-    async fn _create_reaction(
+    async fn create_reaction_(
         &self,
         channel_id: ChannelId,
         message_id: MessageId,
@@ -863,7 +865,7 @@ impl Http {
         message_id: MessageId,
         reaction_type: &ReactionType,
     ) -> Result<()> {
-        self._create_reaction(channel_id, message_id, reaction_type, false).await
+        self.create_reaction_(channel_id, message_id, reaction_type, false).await
     }
 
     /// Super reacts to a message.
@@ -873,7 +875,7 @@ impl Http {
         message_id: MessageId,
         reaction_type: &ReactionType,
     ) -> Result<()> {
-        self._create_reaction(channel_id, message_id, reaction_type, true).await
+        self.create_reaction_(channel_id, message_id, reaction_type, true).await
     }
 
     /// Creates a role.
@@ -967,15 +969,24 @@ impl Http {
         sku_id: SkuId,
         owner: EntitlementOwner,
     ) -> Result<Entitlement> {
+        #[derive(serde::Serialize)]
+        struct TestEntitlement {
+            sku_id: SkuId,
+            owner_id: u64,
+            owner_type: u8,
+        }
+
         let (owner_id, owner_type) = match owner {
             EntitlementOwner::Guild(id) => (id.get(), 1),
             EntitlementOwner::User(id) => (id.get(), 2),
         };
-        let map = json!({
-            "sku_id": sku_id,
-            "owner_id": owner_id,
-            "owner_type": owner_type
-        });
+
+        let map = TestEntitlement {
+            sku_id,
+            owner_id,
+            owner_type,
+        };
+
         self.fire(Request {
             body: Some(to_vec(&map)?),
             multipart: None,
@@ -2403,6 +2414,28 @@ impl Http {
         .await
     }
 
+    /// Changes a voice channel's status.
+    pub async fn edit_voice_status(
+        &self,
+        channel_id: ChannelId,
+        map: &impl serde::Serialize,
+        audit_log_reason: Option<&str>,
+    ) -> Result<()> {
+        let body = to_vec(map)?;
+
+        self.wind(204, Request {
+            body: Some(body),
+            multipart: None,
+            headers: audit_log_reason.map(reason_into_header),
+            method: LightMethod::Put,
+            route: Route::ChannelVoiceStatus {
+                channel_id,
+            },
+            params: None,
+        })
+        .await
+    }
+
     /// Edits a the webhook with the given data.
     ///
     /// The Value is a map with optional values of:
@@ -3212,7 +3245,7 @@ impl Http {
         after: Option<UserId>,
         limit: Option<u8>,
     ) -> Result<Vec<User>> {
-        #[derive(serde::Deserialize)]
+        #[derive(Deserialize)]
         struct VotersResponse {
             users: Vec<User>,
         }
@@ -3772,6 +3805,29 @@ impl Http {
         .await
     }
 
+    /// Retrieves a specific role in a [`Guild`].
+    pub async fn get_guild_role(&self, guild_id: GuildId, role_id: RoleId) -> Result<Role> {
+        let mut value: Value = self
+            .fire(Request {
+                body: None,
+                multipart: None,
+                headers: None,
+                method: LightMethod::Get,
+                route: Route::GuildRole {
+                    guild_id,
+                    role_id,
+                },
+                params: None,
+            })
+            .await?;
+
+        if let Some(map) = value.as_object_mut() {
+            map.insert("guild_id".to_string(), guild_id.get().into());
+        }
+
+        from_value(value).map_err(From::from)
+    }
+
     /// Retrieves a list of roles in a [`Guild`].
     pub async fn get_guild_roles(&self, guild_id: GuildId) -> Result<Vec<Role>> {
         let mut value: Value = self
@@ -4201,6 +4257,21 @@ impl Http {
                 channel_id,
             },
             params: Some(params),
+        })
+        .await
+    }
+
+    /// Retrieves a specific [`StickerPack`] from it's [`StickerPackId`]
+    pub async fn get_sticker_pack(&self, sticker_pack_id: StickerPackId) -> Result<StickerPack> {
+        self.fire(Request {
+            body: None,
+            multipart: None,
+            headers: None,
+            method: LightMethod::Get,
+            route: Route::StickerPack {
+                sticker_pack_id,
+            },
+            params: None,
         })
         .await
     }
@@ -4888,16 +4959,21 @@ impl Http {
     /// This is a function that performs a light amount of work and returns an empty tuple, so it's
     /// called "self.wind" to denote that it's lightweight.
     pub(super) async fn wind(&self, expected: u16, req: Request<'_>) -> Result<()> {
+        let route = req.route;
         let method = req.method.reqwest_method();
         let response = self.request(req).await?;
 
-        if response.status().as_u16() == expected {
+        if response.status().is_success() {
+            let response_status = response.status().as_u16();
+            if response_status != expected {
+                let route = route.path();
+                warn!("Mismatched successful response status from {route}! Expected {expected} but got {response_status}");
+            }
+
             return Ok(());
         }
 
-        debug!("Expected {}, got {}", expected, response.status());
-        trace!("Unsuccessful response: {:?}", response);
-
+        debug!("Unsuccessful response: {response:?}");
         Err(Error::Http(HttpError::UnsuccessfulRequest(
             ErrorResponse::from_response(response, method).await,
         )))

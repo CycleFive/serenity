@@ -24,9 +24,10 @@ use crate::model::gateway::{GatewayIntents, ShardInfo};
 use crate::model::id::{ApplicationId, GuildId};
 use crate::model::user::OnlineStatus;
 
-/// A Shard is a higher-level handler for a websocket connection to Discord's gateway. The shard
-/// allows for sending and receiving messages over the websocket, such as setting the active
-/// activity, reconnecting, syncing guilds, and more.
+/// A Shard is a higher-level handler for a websocket connection to Discord's gateway.
+///
+/// The shard allows for sending and receiving messages over the websocket, such as setting the
+/// active activity, reconnecting, syncing guilds, and more.
 ///
 /// Refer to the [module-level documentation][module docs] for information on effectively using
 /// multiple shards, if you need to.
@@ -481,7 +482,7 @@ impl Shard {
                 self.handle_gateway_closed(data.as_ref())
             },
             Err(Error::Tungstenite(why)) => {
-                warn!("[{:?}] Websocket error: {:?}", self.shard_info, why);
+                info!("[{:?}] Websocket error: {:?}", self.shard_info, why);
                 info!("[{:?}] Will attempt to auto-reconnect", self.shard_info);
 
                 Ok(Some(ShardAction::Reconnect(self.reconnection_type())))
