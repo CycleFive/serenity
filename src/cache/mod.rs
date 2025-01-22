@@ -115,7 +115,7 @@ pub type CurrentUserRef<'a> = CacheRef<'a, Never, CurrentUser, Never>;
 pub type MessageRef<'a> = CacheRef<'a, ChannelId, Message, VecDeque<Message>>;
 pub type ChannelMessagesRef<'a> = CacheRef<'a, ChannelId, VecDeque<Message>, Never>;
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Debug)]
 pub(crate) struct CachedShardData {
     pub total: NonZeroU16,
@@ -141,7 +141,7 @@ pub(crate) struct CachedShardData {
 ///
 /// [`Shard`]: crate::gateway::Shard
 /// [`http`]: crate::http
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct Cache {

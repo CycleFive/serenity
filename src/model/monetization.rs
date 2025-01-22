@@ -73,7 +73,7 @@ bitflags! {
 /// Represents that a user or guild has access to a premium offering in the application.
 ///
 /// [Discord docs](https://discord.com/developers/docs/monetization/entitlements#entitlement-object-entitlement-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Entitlement {
     /// The ID of the entitlement.
@@ -124,7 +124,7 @@ enum_number! {
     /// Differentiates between Entitlement types.
     ///
     /// [Discord docs](https://discord.com/developers/docs/monetization/entitlements#entitlement-object-entitlement-types).
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
     #[derive(Clone, Debug, Serialize, Deserialize)]
     #[non_exhaustive]
     pub enum EntitlementKind {

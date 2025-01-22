@@ -208,7 +208,7 @@ id_u64! {
 ///
 /// This identifier is special, it simply models internal IDs for type safety and therefore cannot
 /// be deserialized
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub struct ShardId(pub u16);
 
@@ -230,7 +230,7 @@ newtype_display_impl!(ShardId, |this| this.0);
 /// This is identifier is special as it is not a snowflake.
 ///
 /// The specific algorithm used is currently just a sequential index but this is subject to change.
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Deserialize, Serialize)]
 #[repr(Rust, packed)]
 pub struct AnswerId(nonmax::NonMaxU8);

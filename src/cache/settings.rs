@@ -10,7 +10,7 @@
 /// let mut settings = CacheSettings::default();
 /// settings.max_messages = 10;
 /// ```
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub struct Settings {

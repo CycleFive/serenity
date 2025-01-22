@@ -46,7 +46,7 @@ use serde::{Deserialize, Serialize};
 const DISCORD_EPOCH: u64 = 1_420_070_400_000;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[serde(transparent)]
 pub struct Timestamp(
     #[cfg(feature = "chrono")] DateTime<Utc>,

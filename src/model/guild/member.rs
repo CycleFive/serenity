@@ -17,7 +17,7 @@ use crate::model::utils::avatar_url;
 /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-member-object),
 /// [extra fields](https://discord.com/developers/docs/topics/gateway-events#guild-member-add-guild-member-add-extra-fields).
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct Member {
@@ -69,7 +69,7 @@ bitflags! {
     /// Flags for a guild member.
     ///
     /// [Discord docs](https://discord.com/developers/docs/resources/guild#guild-member-object-guild-member-flags).
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
     #[derive(Copy, Clone, Default, Debug, Eq, Hash, PartialEq)]
     pub struct GuildMemberFlags: u32 {
         /// Member has left and rejoined the guild. Not editable
@@ -444,7 +444,7 @@ impl ExtractKey<UserId> for Member {
 /// [link](https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure),
 /// [link](https://discord.com/developers/docs/interactions/receiving-and-responding#message-interaction-object))
 #[bool_to_bitflags::bool_to_bitflags]
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug, Hash, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 #[non_exhaustive]
 pub struct PartialMember {
@@ -533,7 +533,7 @@ impl From<Member> for PartialMember {
     }
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct PartialThreadMember {
@@ -549,7 +549,7 @@ pub struct PartialThreadMember {
 ///
 /// [Discord docs]: https://discord.com/developers/docs/resources/channel#thread-member-object,
 /// [extra fields]: https://discord.com/developers/docs/topics/gateway-events#thread-member-update-thread-member-update-event-extra-fields
-#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ThreadMember {
@@ -579,7 +579,7 @@ bitflags! {
     /// Describes extra features of the message.
     ///
     /// Discord docs: flags field on [Thread Member](https://discord.com/developers/docs/resources/channel#thread-member-object).
-    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
     #[derive(Copy, Clone, Default, Debug, Eq, Hash, PartialEq)]
     pub struct ThreadMemberFlags: u64 {
         // Not documented.
