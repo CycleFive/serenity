@@ -8,7 +8,7 @@ use crate::model::utils::{default_true, deserialize_val};
 enum_number! {
     /// The type of a component
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum ComponentType {
         ActionRow = 1,
@@ -26,7 +26,7 @@ enum_number! {
 /// An action row.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#action-rows).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct ActionRow {
@@ -41,7 +41,7 @@ pub struct ActionRow {
 /// A component which can be inside of an [`ActionRow`].
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#component-object-component-types).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug)]
 #[non_exhaustive]
 pub enum ActionRowComponent {
@@ -98,7 +98,7 @@ impl From<SelectMenu> for ActionRowComponent {
     }
 }
 
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum ButtonKind {
@@ -157,7 +157,7 @@ impl Serialize for ButtonKind {
 /// A button component.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#button-object-button-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Button {
@@ -181,7 +181,7 @@ pub struct Button {
 enum_number! {
     /// The style of a button.
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum ButtonStyle {
         Primary = 1,
@@ -196,7 +196,7 @@ enum_number! {
 /// A select menu component.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-menu-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct SelectMenu {
@@ -229,7 +229,7 @@ pub struct SelectMenu {
 /// A select menu component options.
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-option-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct SelectMenuOption {
@@ -249,7 +249,7 @@ pub struct SelectMenuOption {
 /// An input text component for modal interactions
 ///
 /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-structure).
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct InputText {
@@ -294,7 +294,7 @@ enum_number! {
     ///
     /// [Discord docs](https://discord.com/developers/docs/interactions/message-components#text-inputs-text-input-styles).
     #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd, Deserialize, Serialize)]
-    #[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+    #[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
     #[non_exhaustive]
     pub enum InputTextStyle {
         Short = 1,

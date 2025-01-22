@@ -47,7 +47,7 @@ impl typesize::TypeSize for SecretString {
 }
 
 /// A type for securely storing and passing around a Discord token.
-#[cfg_attr(feature = "typesize", derive(typesize::TypeSize))]
+#[cfg_attr(feature = "typesize", derive(typesize::derive::TypeSize))]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(try_from = "&str")]
 pub struct Token(SecretString);
